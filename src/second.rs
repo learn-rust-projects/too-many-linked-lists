@@ -58,7 +58,7 @@ impl<T> Drop for List<T> {
 pub struct IntoIter<T>(List<T>);
 
 impl<T> List<T> {
-    pub fn into_iter(self) -> IntoIter<T> {
+    pub fn to_iter(self) -> IntoIter<T> {
         IntoIter(self)
     }
 }
@@ -177,7 +177,7 @@ mod test {
         list.push(2);
         list.push(3);
 
-        let mut iter = list.into_iter();
+        let mut iter = list.to_iter();
         assert_eq!(iter.next(), Some(3));
         assert_eq!(iter.next(), Some(2));
         assert_eq!(iter.next(), Some(1));
@@ -189,5 +189,18 @@ mod test {
         // 无论多少层引用调用as_ref 自动解引用直到匹配Option<T> => Option<&T>
         // 对Some(&T) => Some(&Target)
         let borrowed2 = s.as_ref();
+    }
+
+    #[test]
+    fn iter_mut() {
+        let mut list = List::new();
+        list.push(1);
+        list.push(2);
+        list.push(3);
+
+        let mut iter = list.iter_mut();
+        assert_eq!(iter.next(), Some(&mut 3));
+        assert_eq!(iter.next(), Some(&mut 2));
+        assert_eq!(iter.next(), Some(&mut 1));
     }
 }
