@@ -41,6 +41,21 @@ impl<T> List<T> {
     pub fn peek_mut(&mut self) -> Option<&mut T> {
         self.head.as_mut().map(|node| &mut node.elem)
     }
+    pub fn reverse(&mut self) {
+        // 定义之前的节点: 取第一个节点
+        let mut link = None;
+        // 定义并初始化当前节点
+        let mut cur_link = self.head.take();
+
+        while let Link::Some(mut boxed_node) = cur_link {
+            // 取出它的下一个节点,以供后续使用
+            cur_link = boxed_node.next;
+            // 让当前节点改变指向link,link本身的值不可用,但是link作为一个变量名还可以换绑其他变量?
+            boxed_node.next = link;
+            link = Some(boxed_node)
+        }
+        self.head = link
+    }
 }
 
 impl<T> Drop for List<T> {
@@ -202,5 +217,75 @@ mod test {
         assert_eq!(iter.next(), Some(&mut 3));
         assert_eq!(iter.next(), Some(&mut 2));
         assert_eq!(iter.next(), Some(&mut 1));
+    }
+
+    #[test]
+    fn reverse() {
+        let mut list = List::new();
+        list.push(1);
+        list.push(2);
+        list.push(3);
+
+        list.reverse();
+
+        let mut iter = list.iter_mut();
+        assert_eq!(iter.next(), Some(&mut 1));
+        assert_eq!(iter.next(), Some(&mut 2));
+        assert_eq!(iter.next(), Some(&mut 3));
+    }
+
+    #[derive(Debug)]
+    struct Node {
+        val: i32,
+        next: Option<Box<Node>>,
+    }
+    #[test]
+    fn test() {
+        let mut head = Node {
+            val: 1,
+            next: Some(Box::new(Node { val: 2, next: None })),
+        };
+
+        let mut cur = &mut head;
+
+        // ❌ 以下代码将触发编译器借用冲突错误
+        let next_ref = cur.next.as_mut(); // 可变借用了 cur.next
+        cur = next_ref.unwrap(); // 又想修改 cur 本身
+        print!("{cur:?}");
+    }
+
+    #[test]
+    fn test2() {
+        let mut node = Node { val: 1, next: None };
+
+        let next_ref = node.next.as_mut(); // 可变借用 node.next
+        let x = next_ref.is_none();
+        node.next = None; // ❌ 同时修改 node → 编译器报错
+        print!("{x}");
+    }
+    #[test]
+    fn test3() {
+        let mut head = Node {
+            val: 1,
+            next: Some(Box::new(Node { val: 1, next: None })),
+        };
+        let mut cur = &mut head;
+
+        // 从 cur（&mut Node）借用字段 cur.next（&mut Option<Box<Node>>）
+        // 并赋值给 cur 变量
+        cur = cur.next.as_mut().unwrap();
+    }
+
+    #[test]
+    fn test4() {
+        let mut head = Node {
+            val: 1,
+            next: Some(Box::new(Node { val: 1, next: None })),
+        };
+        let mut cur = &mut head;
+
+        // 从 cur（&mut Node）借用字段 cur.next（&mut Option<Box<Node>>）
+        // 并赋值给 cur 变量
+        cur = cur.next.as_mut().unwrap();
     }
 }
